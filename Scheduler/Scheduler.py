@@ -17,7 +17,6 @@ class Scheduler(object):
                 self.datelist.append(date0)
             date0 += delay
         return self.datelist
-        #return pd.date_range(start=start,end=end,freq=freq, referencedate=referencedate).date
 
     def extractDelay(self, freq):
         if type(freq) == list:

@@ -44,9 +44,6 @@ class MC_Vasicek_Sim(object):
     # calculate integral(r(s)ds)
         integralR = r.cumsum(axis=0)*self.t_step
     # calculate Libor
-        #expected = np.shape(integralR)[1]
-        #expected = integralR.sum(axis=1)/self.simNumber
-        #self.libor = np.c_[expected, integralR]
         self.libor = np.exp(-integralR)
         #expected = np.exp(-integralR).sum(axis=0)/self.simNumber
         #self.libor = np.c_[expected,self.libor]
