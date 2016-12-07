@@ -32,11 +32,14 @@ datelist = myScheduler.getSchedule(start=start, end=maxDay, freq=freq, reference
 
 myBond = CouponBond(fee=fee, start=start, maturity=maturity, coupon=coupon, freq="3M", referencedate=referenceDate, observationdate = observationdate)
 fulllist, datelist = myBond.getScheduleComplete()
-myMC = MC_Vasicek_Sim(datelist=datelist, x=xR ,simNumber=simNumber, t_step=t_step)
-#myMC.setVasicek(x=xR, minDay=minDay, maxDay=maxDay, simNumber=simNumber, t_step=t_step)
+myMC = MC_Vasicek_Sim()
+myMC.setVasicek(x=xR, minDay=minDay, maxDay=maxDay, simNumber=simNumber, t_step=t_step)
 myMC.getLibor()
 libor = myMC.getSmallLibor(datelist=fulllist)
 myBond.setLibor(libor=libor)
+myBond.getExposure(referenceDate)
+myBond.getYield(price=1)
+print(myBond.getLiborAvg())
 a=1
 
 

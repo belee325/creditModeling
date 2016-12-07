@@ -60,7 +60,8 @@ class MC_Vasicek_Sim(object):
         #self.smallLibor = pd.DataFrame(data= self.smallLibor, index= ind)
         return self.smallLibor
 
-#####################################################################################
+
+ ####################################################################################
     def saveMeExcel(self):
         df = DataFrame(self.libor)
         df.to_excel(os.path.join(WORKING_DIR,'MC_Vasicek_Sim.xlsx'), sheet_name='libor', index=False)

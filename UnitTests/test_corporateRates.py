@@ -18,7 +18,7 @@ trim_end = date(2000, 12, 31)
 referenceDate = date(2005, 3, 30)
 
 xR = [2.0, 0.05, 0.01, 0.07]
-
+xQ = [0.1,0.05,0.13,0.2]
 # CashFlow Dates
 testSched = pd.date_range(trim_start,trim_start)
 scheduleComplete = pd.date_range(start=trim_start,end=trim_end)
@@ -26,6 +26,9 @@ myCorp = CorporateRates()
 myCorp.getCorporatesFred(trim_start,trim_end)
 testRatings = myCorp.getCorporateData("AAA",testSched)
 testSurvival = myCorp.getCorporateQData("AAA",scheduleComplete,0.4)
+myCorp.getSimCurve(x=xQ,minDay=trim_start, maxDay=trim_end, simNum=simNumber, tStep=t_step)
+print(myCorp.simCurve)
+xQ_Calibrated = myCorp.calibrate(testSurvival.loc[:,"1 MO"])
 myCorp.pickleMe()
 
 

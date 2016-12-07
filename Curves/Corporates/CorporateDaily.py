@@ -7,7 +7,7 @@ from Scheduler.Scheduler import Scheduler
 from parameters import WORKING_DIR
 from MonteCarloSimulators.Vasicek.vasicekMCSim import MC_Vasicek_Sim
 from fredapi import Fred
-
+from scipy.optimize import minimize
 QUANDL_API_KEY = "i1GzZpZsfBpPpazzR4Mg"
 FRED_API_KEY = "Create Your Own"
 
@@ -88,9 +88,6 @@ class CorporateRates(object):
             return
         outCurve = {}
         for day in datelist:
-        # Create curves
-        # ..............
-        # ..............
         # add curve to outcurve dict
             myCurve = self.corporates.loc[rating, datelist]
             outCurve[day]=myCurve
@@ -103,6 +100,7 @@ class CorporateRates(object):
         if datelist is None:
             return
         myCurve = np.ones(11)
+        tempCurve = np.ones(11)
         outCurve[datelist[0]] = myCurve
         z = self.OIS.getOIS(datelist)
         spread = self.getCorporateData(rating, datelist)
@@ -120,11 +118,27 @@ class CorporateRates(object):
                 spread = self.getCorporateData(rating, pd.date_range(start=day, end=day))
                 interimSum = interimSum + z.loc[day2].values[1:]*(outCurve[day2]*delta*spread[day].values-(1-R)*(qPrev - qCurr))
             myCurve = (z.loc[day].values[1:]*(1-R)*outCurve[day-1] - interimSum) / (z.loc[day].values[1:]*(delta*spread[day]+1-R))
-            outCurve[day]=myCurve.values
-            #interimSum=np.zeros(11)
-            #print(day)
-        return outCurve
+            tempCurve= np.vstack((tempCurve,myCurve.values.ravel()))
+            outCurve[day]=myCurve.values.ravel()
+        a=1
+        tempCurve = pd.DataFrame(data=tempCurve, columns=z.columns[1:],index=datelist.values)
+        return tempCurve
 
+    def getSimCurve(self, x, minDay, maxDay, simNum, tStep):
+        self.initParam = x
+        vasicekSurv = MC_Vasicek_Sim()
+        vasicekSurv.setVasicek(minDay=minDay, maxDay=maxDay, x=x, simNumber=simNum, t_step=tStep)
+        self.simCurve=vasicekSurv.getLibor()
+
+    def getError(self, actual):
+        error = np.sum(actual.values - self.simCurve[0].values)
+        sse = 1e4 * error ** 2
+        return sse
+
+    def calibrate(self,actual):
+        result = minimize(fun=self.getError(actual=actual), x0=self.initParam)
+        self.calibratedParam = result.x
+        return result.x
 
     def pickleMe(self):
         data = [self.corporates, self.corpSpreads]

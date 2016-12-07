@@ -5,7 +5,7 @@ import pandas as pd
 from scipy.optimize import minimize
 
 class CouponBond(object):
-    def __init__(self, fee, coupon, start, maturity, freq, referencedate, observationdate, notional):
+    def __init__(self, fee, coupon, start, maturity, freq, referencedate, observationdate, notional=1):
         self.fee = fee
         self.coupon=coupon
         self.start = start
@@ -23,6 +23,7 @@ class CouponBond(object):
         self.cashFlowsAvg = []
         self.yieldIn = 0.0
         self.notional = notional
+        self.errorCurve = []
 
     def getScheduleComplete(self):
         self.datelist = self.myScheduler.getSchedule(start=self.start,end=self.maturity,freq=self.freq,referencedate=self.referencedate)
@@ -96,6 +97,7 @@ class CouponBond(object):
     def fitModel2Curve(self, x ):
         # Minimization procedure to fit curve to model
         results = minimize(fun=self.fCurve, x0=x)
+        a=1
         return results.x
 
     def fCurve(self, x):
@@ -103,4 +105,5 @@ class CouponBond(object):
         calcCurve = self.getLiborAvg(x, self.datelist)
         thisPV = np.multiply(self.cashFlows,calcCurve).mean(axis=1).sum(axis=0)
         error = 1e4 * (self.price - thisPV) ** 2
+        self.errorCurve = error
         return error
