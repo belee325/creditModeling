@@ -96,6 +96,8 @@ class CorporateRates(object):
     def getCorporateQData(self, rating, datelist=None, R=0.4):
         self.R = R
         self.OIS = OIS()
+        # there is a difference in labels between Fred and Quandl...
+        colLabel = ["1M", "3M", "6M", "1Y", "2Y", "3Y", "5Y", "7Y", "10Y", "20Y", "30Y"]
         outCurve = {}
         if datelist is None:
             return
@@ -121,7 +123,7 @@ class CorporateRates(object):
             tempCurve= np.vstack((tempCurve,myCurve.values.ravel()))
             outCurve[day]=myCurve.values.ravel()
         a=1
-        tempCurve = pd.DataFrame(data=tempCurve, columns=z.columns[1:],index=datelist.values)
+        tempCurve = pd.DataFrame(data=tempCurve, columns=colLabel,index=datelist.values)
         return tempCurve
 
     def getSimCurve(self, x, minDay, maxDay, simNum, tStep):
