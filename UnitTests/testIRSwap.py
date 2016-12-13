@@ -37,4 +37,5 @@ initSpread = mySwap.setSwapRate()
 mySwap.setCashFlows()
 mySwap.getExposure()
 mySwap.getCVA(testSurvival)
+
 a=1

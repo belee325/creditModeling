@@ -6,23 +6,23 @@ from datetime import datetime, timedelta
 from MonteCarloSimulators.Vasicek.vasicekMCSim import MC_Vasicek_Sim
 
 class IRSwap(object):
-    def __init__(self, zCurve, startDate, endDate, referenceDate, effectiveDate, rating, xR, freq, notional, recovery=0.4):
+    def __init__(self, startDate, endDate, referenceDate, effectiveDate, freq, notional, recovery=0.4):
         """
             effective date is the start of the payments, startDate is when the contract is entered, endDate is maturity
-            referenceDate is the date when the PV is taken??
+            referenceDate is the date when the PV is taken
             We are paying a fixed rate to receive a floating rate
         """
         self.recovery=recovery
         self.simNum = 10
-        self.xR = xR
+        self.xR = []
+        self.xQ = []
         # use MC to generate scenarios for exposure
         self.mcSim = MC_Vasicek_Sim()
-        self.mcSim.setVasicek(minDay=startDate,maxDay=endDate,x=xR,t_step=1.0/365, simNumber=self.simNum)
+        #self.mcSim.setVasicek(minDay=startDate,maxDay=endDate,x=xR,t_step=1.0/365, simNumber=self.simNum)
         # z is discount curve
-        self.z = zCurve
+        self.zCurve =[]
         self.swapRate = []
         self.freq = freq
-        self.rating = rating
         self.notional=notional
         self.fixedLeg = []
         self.floatingLeg = []
@@ -45,13 +45,20 @@ class IRSwap(object):
                                    )
         return fullset,self.datelist
 
+    def setLibor(self,libor):
+        self.zCurve = libor/libor.loc[self.referenceDate]
+
+    def setxR(self,xR):
+        self.xR = xR
+        self.mcSim.setVasicek(minDay=self.startDate, maxDay=self.endDate, x=xR, t_step=1.0 / 365, simNumber=self.simNum)
+
     def setSwapRate(self):
         # getting initial spread at time zero
-        floatLegPV= (self.z.loc[self.effctiveDate,0]) - (self.z.loc[self.endDate,0])
+        floatLegPV= (self.zCurve.loc[self.effctiveDate,0]) - (self.zCurve.loc[self.endDate,0])
         fixedLegPV=0
         delta = (self.datelist[1]-self.datelist[0]).days/365
         for payDate in self.datelist:
-                fixedLegPV += delta*self.z.loc[payDate.date(),0]
+                fixedLegPV += delta*self.zCurve.loc[payDate.date(),0]
         swapRate = floatLegPV/fixedLegPV
         self.swapRate = swapRate
         return
@@ -62,9 +69,9 @@ class IRSwap(object):
         delta = (self.datelist[1] - self.datelist[0]).days / 365
         for payDate in self.datelist:
             if payDate.date()==self.endDate:
-                floatLegCF.append(((self.z.loc[payDate.date(),0]/self.z.loc[payDate.date()+timedelta(delta*365),0])-1)/delta)
+                floatLegCF.append(((self.zCurve.loc[payDate.date(),0]/self.zCurve.loc[payDate.date()+timedelta(delta*365),0])-1)/delta)
             else:
-                floatLegCF.append((self.z.loc[payDate.date(),0]/self.z.loc[(payDate+1).date(),0] - 1)/delta)
+                floatLegCF.append((self.zCurve.loc[payDate.date(),0]/self.zCurve.loc[(payDate+1).date(),0] - 1)/delta)
         fixedLegCF = pd.DataFrame(data=fixedLegCF,index=self.datelist)
         floatLegCF = pd.DataFrame(data=floatLegCF,index=self.datelist)
         self.fixedLeg = fixedLegCF
@@ -98,7 +105,7 @@ class IRSwap(object):
 
     def getCVA(self, survCurve):
         # CVA = LGD * EE * PD * Discount, LGD =1-R
-        CVA = self.notional * (1-self.recovery) * self.avgExposure.values * survCurve.loc[self.fullDate,self.freq].values * self.z.loc[self.fullDate,0].values
+        CVA = self.notional * (1-self.recovery) * self.avgExposure.values * survCurve.loc[self.fullDate,self.freq].values * self.zCurve.loc[self.fullDate,0].values
         CVA = pd.DataFrame(data= CVA, index=self.fullDate)
         self.CVA =CVA
         return

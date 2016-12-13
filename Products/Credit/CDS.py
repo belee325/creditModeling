@@ -5,30 +5,34 @@ from Scheduler.Scheduler import Scheduler
 from MonteCarloSimulators.Vasicek.vasicekMCSim import MC_Vasicek_Sim
 
 class CDS(object):
-    def __init__(self, start, end, reference, recovery, survival, libor, xR, xQ, freq="1M"):
+    def __init__(self, start, end, reference, recovery, freq="1M"):
         self.numSim =10
-        self.survival = survival
+        self.t_step = 1.0/365
         #z curve is for discounting
-        self.zCurve=libor
+        self.zCurve=[]
+        #q curve is for survival prob
+        self.qCurve=[]
         self.start=start
         self.end =end
         self.reference = reference
         self.freq=freq
         # mcSim used for simulating default prob, interest rate
-        self.xR = xR
-        self.xQ = xQ
+        self.xR = []
+        self.xQ = []
         self.mcSim = MC_Vasicek_Sim()
         self.mcSimSurvival = MC_Vasicek_Sim()
-        self.mcSim.setVasicek(minDay=startDate, maxDay=endDate, x=xR, t_step=1.0 / 365, simNumber=self.simNum)
-        self.mcSimSurvival.setVasicek(minDay=startDate, maxDay=endDate, x=xR, t_step=1.0 / 365, simNumber=self.simNum)
+
+        #self.mcSim.setVasicek(minDay=startDate, maxDay=endDate, x=xR, t_step=1.0 / 365, simNumber=self.simNum)
+        #self.mcSimSurvival.setVasicek(minDay=startDate, maxDay=endDate, x=xR, t_step=1.0 / 365, simNumber=self.simNum)
+
         self.dateList = pd.date_range(start=start,end=end,freq=freq)
         self.recovery =recovery
 
     def getDefaultLegPV(self):
         interimSum = 0
         for payDates in self.dateList[1:]:
-            interimSum += self.zCurve.loc[payDates.date(),0]*(self.survival.loc[(payDates-1).date(), 0] -
-                                                             self.survival.loc[payDates.date(), 0])
+            interimSum += self.zCurve.loc[payDates.date(),0]*(self.qCurve.loc[(payDates-1).date(), 0] -
+                                                              self.qCurve.loc[payDates.date(), 0])
         defaultLeg = (1-self.recovery)*interimSum
         return defaultLeg
 
@@ -36,8 +40,8 @@ class CDS(object):
         delta = (self.dateList[1] - self.dateList[0]).days/365
         interimSum =0
         for payDate in self.dateList[1:]:
-            interimSum += self.zCurve.loc[payDate.date(), 0]*delta*(self.survival.loc[(payDate-1).date(), 0] +
-                                                                   self.survival.loc[payDate.date(), 0])
+            interimSum += self.zCurve.loc[payDate.date(), 0]*delta*(self.qCurve.loc[(payDate-1).date(), 0] +
+                                                                    self.qCurve.loc[payDate.date(), 0])
         feeLeg = 0.5*interimSum
         return feeLeg
 
@@ -46,14 +50,28 @@ class CDS(object):
         self.spread=spread
         return spread
 
+    def setLibor(self,libor):
+        self.zCurve = libor/libor.loc[self.reference]
+
+    def setSurvival(self, survival):
+        self.qCurve = survival
+
+    def setxR(self,xR):
+        self.xR = xR
+        self.mcSim.setVasicek(minDay=self.start, maxDay=self.end,x=self.xR, simNumber=self.numSim, t_step=self.t_step)
+
+    def setxQ(self,xQ):
+        self.xQ = xQ
+        self.mcSimSurvival.setVasicek(minDay=self.start, maxDay=self.end, x=self.xR, simNumber=self.numSim, t_step=self.t_step)
+
     def setCF(self):
         feeLegCF = np.ones(len(self.dateList)) * self.spread
-        defaultLegCF = np.ones(len(self.dateList))*(1-self.recovery)*self.survival.loc[self.dateList].values
+        defaultLegCF = np.ones(len(self.dateList))*(1-self.recovery)*self.qCurve.loc[self.dateList].values
         self.feeLeg = pd.DataFrame(data=feeLegCF, index=self.dateList)
         self.defaultLeg = pd.DataFrame(data=defaultLegCF, index=self.dateList)
         return
 
-    def getExposure(self, survivalCurve):
+    def getExposure(self):
         #PV of protection leg - fee leg
         #use survivalCurve passed in as the survival prob of the reference entitity
         #simulate the default probability of the counterparty - newQcurve
@@ -63,6 +81,7 @@ class CDS(object):
             row=0
             newZCurve = self.mcSim.getLibor()
             newQCurve = self.mcSimSurvival.getLibor()
+            survivalCurve = self.qCurve
             for day in fullDate:
                 if day == fullDate[0]:
                     #feePV - pay fee as long as counter and reference do not default
@@ -91,5 +110,5 @@ class CDS(object):
         self.fullExposure = EE
         self.avgExposure = EE.mean(axis=1)
     def getCVA(self):
-        self.CVA = (1-self.recovery) * self.avgExposure.values * self.zCurve.loc[self.fullDate].values * self.survival.loc[self.fullDate].values
+        self.CVA = (1-self.recovery) * self.avgExposure.values * self.zCurve.loc[self.fullDate].values * self.qCurve.loc[self.fullDate].values
         return

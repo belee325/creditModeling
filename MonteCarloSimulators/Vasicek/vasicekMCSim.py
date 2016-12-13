@@ -64,7 +64,8 @@ class MC_Vasicek_Sim(object):
         error = 0
         curve = args[0]
         offSet = args[1]
-        error = 1e4 * (offSet - curve - x[0]*(x[1]-curve) * self.t_step) **2
+        t_step = args[2]
+        error = 1e4 * (offSet - curve - x[0]*(x[1]-curve) * t_step) **2
         return np.sum(error)
 
  ####################################################################################
