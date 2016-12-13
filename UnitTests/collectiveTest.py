@@ -71,3 +71,6 @@ myIR.getCVA(qCounterParty)
 
 # set up CDS
 myCDS = CDS(start=startDate,end=endDate,reference=referenceDate,recovery=R, freq=freq)
+myCDS.setxR(calibratedVasicekParams)
+myCDS.setLibor(zCurve)
+myCDS.setSurvival()
