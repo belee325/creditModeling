@@ -60,6 +60,12 @@ class MC_Vasicek_Sim(object):
         #self.smallLibor = pd.DataFrame(data= self.smallLibor, index= ind)
         return self.smallLibor
 
+    def errorFunction(self, x, *args):
+        error = 0
+        curve = args[0]
+        offSet = args[1]
+        error = 1e4 * (offSet - curve - x[0]*(x[1]-curve) * self.t_step) **2
+        return np.sum(error)
 
  ####################################################################################
     def saveMeExcel(self):
@@ -77,4 +83,3 @@ class MC_Vasicek_Sim(object):
         for item in a:
             index.append(np.bisect.bisect(b,item))
         return np.unique(index).tolist()
-

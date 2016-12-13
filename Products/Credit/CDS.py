@@ -93,4 +93,3 @@ class CDS(object):
     def getCVA(self):
         self.CVA = (1-self.recovery) * self.avgExposure.values * self.zCurve.loc[self.fullDate].values * self.survival.loc[self.fullDate].values
         return
-    
