@@ -39,7 +39,7 @@ OISCurve = myOIS.getOIS()
 #in proxy of CDS spreads, will use corporate bond spreads 1MO
 myCorp=CorporateRates()
 corporateData = myCorp.getCorporatesFred(trim_start,trim_end)
-qCounterParty = myCorp.getCorporateQData(rating=counterPartyRating, datelist=datelist)
+qCounterPartyBootstrapped = myCorp.getCorporateQData(rating=counterPartyRating, datelist=datelist).loc[:,"1M"]
 
 #create simulator for interest rates and survival curve
 myMCDiscount = MC_Vasicek_Sim()
@@ -48,20 +48,30 @@ myMCSurvival = MC_Vasicek_Sim()
 #calibrating vasicek params - use 1MO OIS
 rateCurve = OISCurve.loc[:,"1 MO"].values
 offsetRateCurve = rateCurve[1:]
-res = optimize.fmin(func = myMCDiscount.errorFunction, x0=np.array([xR[0], xR[1]]), args=(rateCurve[:-1],offsetRateCurve,t_step))
+res = optimize.fmin(func = myMCDiscount.errorFunction, x0=np.array([xR[0], xR[1]]), args=(rateCurve[:-1],
+                                                                                          offsetRateCurve,t_step))
 calibSigma = np.std(rateCurve[:-1] - offsetRateCurve)
 calibratedVasicekParams = np.append(res,np.array([calibSigma, xR[3]]))
 myMCDiscount.setVasicek(minDay=trim_start,maxDay=trim_end, x=calibratedVasicekParams, simNumber=simNumber, t_step=t_step)
 zCurve = myMCDiscount.getLibor()
 
+#calibrating vasicek for counter party qCurve
+res2 = optimize.fmin(func=myMCSurvival.errorFunction, x0=np.array([xQ[0],xQ[1]]),
+                     args=(qCounterPartyBootstrapped.values[:-1],qCounterPartyBootstrapped.values[1:],t_step))
+calibSigma2 = np.std(qCounterPartyBootstrapped.values[:-1] - qCounterPartyBootstrapped.values[1:])
+calibratedSurvParams = np.append(res2,np.array([calibSigma2, xQ[3]]))
+myMCSurvival.setVasicek(minDay=trim_start,maxDay=trim_end, x=calibratedSurvParams, simNumber=simNumber, t_step=t_step)
+qCounterParty = myMCSurvival.getLibor().loc[:,0]
 
 coupon = 0.07536509
 notional = 1
 # set up bond
-myBond = CouponBond(fee=1.0, start=startDate, maturity=endDate,  coupon=coupon, notional=notional, freq=freq, referencedate=referenceDate, observationdate=referenceDate)
+myBond = CouponBond(fee=1.0, start=startDate, maturity=endDate,  coupon=coupon, notional=notional,
+                    freq=freq, referencedate=referenceDate, observationdate=referenceDate)
 
 # set up IRS
-myIR = IRSwap(startDate=startDate,endDate=endDate,referenceDate=referenceDate,effectiveDate=effectiveDate,freq=freq,notional=1)
+myIR = IRSwap(startDate=startDate,endDate=endDate,referenceDate=referenceDate,effectiveDate=effectiveDate,
+              freq=freq,notional=1)
 myIR.setLibor(zCurve)
 myIR.setxR(calibratedVasicekParams)
 myIR.setSwapRate()
@@ -70,7 +80,14 @@ myIR.getExposure()
 myIR.getCVA(qCounterParty)
 
 # set up CDS
-myCDS = CDS(start=startDate,end=endDate,reference=referenceDate,recovery=R, freq=freq)
+myCDS = CDS(start=startDate,end=endDate,reference=referenceDate,recovery=R, freq=freq, notional=notional, rating = "AA")
+myCDS.setCorpData(corporateData)
 myCDS.setxR(calibratedVasicekParams)
+myCDS.setxQ(xQ)
 myCDS.setLibor(zCurve)
-myCDS.setSurvival()
+myCDS.setQCurve()
+myCDS.getSpread()
+myCDS.setCF()
+myCDS.getExposure()
+myCDS.getCVA()
+a=1

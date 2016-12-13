@@ -93,8 +93,8 @@ class IRSwap(object):
                     npv = (np.sum((floatPartial-fixedPartial).values.ravel()*zCurveNew.loc[fixedPartial.index,0].values))
                 else:
                     npv = 0
-                if npv < 0:
-                    npv = 0
+                #if npv < 0:
+                #    npv = 0
                 EE[row,i] = npv
                 row+=1
         EE = pd.DataFrame(data=EE, index=fullDate)
@@ -105,7 +105,7 @@ class IRSwap(object):
 
     def getCVA(self, survCurve):
         # CVA = LGD * EE * PD * Discount, LGD =1-R
-        CVA = self.notional * (1-self.recovery) * self.avgExposure.values * survCurve.loc[self.fullDate,self.freq].values * self.zCurve.loc[self.fullDate,0].values
+        CVA = self.notional * (1-self.recovery) * self.avgExposure.values * survCurve.loc[self.fullDate].values * self.zCurve.loc[self.fullDate,0].values
         CVA = pd.DataFrame(data= CVA, index=self.fullDate)
         self.CVA =CVA
         return
