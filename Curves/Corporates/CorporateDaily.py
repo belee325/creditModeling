@@ -126,22 +126,6 @@ class CorporateRates(object):
         tempCurve = pd.DataFrame(data=tempCurve, columns=colLabel,index=datelist.values)
         return tempCurve
 
-    def getSimCurve(self, x, minDay, maxDay, simNum, tStep):
-        self.initParam = x
-        vasicekSurv = MC_Vasicek_Sim()
-        vasicekSurv.setVasicek(minDay=minDay, maxDay=maxDay, x=x, simNumber=simNum, t_step=tStep)
-        self.simCurve=vasicekSurv.getLibor()
-
-    def getError(self, actual):
-        error = np.sum(actual.values - self.simCurve[0].values)
-        sse = 1e4 * error ** 2
-        return sse
-
-    def calibrate(self,actual):
-        result = minimize(fun=self.getError(actual=actual), x0=self.initParam)
-        self.calibratedParam = result.x
-        return result.x
-
     def pickleMe(self):
         data = [self.corporates, self.corpSpreads]
         with open(self.filename, "wb") as f:

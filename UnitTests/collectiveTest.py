@@ -21,7 +21,7 @@ trim_end=date(2010, 12,13)
 
 #contract start date end date
 startDate = date(2000,6,30)
-referenceDate = date(2000, 7, 31)
+referenceDate = date(2000, 6, 30)
 effectiveDate = date(2000,9,30)
 endDate = date(2002,6, 30)
 datelist = pd.date_range(start=startDate,end=endDate,freq=freq)
@@ -67,8 +67,14 @@ coupon = 0.07536509
 notional = 1
 # set up bond
 myBond = CouponBond(fee=1.0, start=startDate, maturity=endDate,  coupon=coupon, notional=notional,
-                    freq=freq, referencedate=referenceDate, observationdate=referenceDate)
-
+                    freq=freq, referencedate=referenceDate, observationdate=referenceDate, rating="BBB")
+myBond.setLibor(zCurve)
+myBond.getExposure(referenceDate)
+myBond.getFullExposure()
+myBond.setCorpData(corporateData)
+myBond.setxQ(xQ)
+myBond.setQCurve()
+myBond.getCVA()
 # set up IRS
 myIR = IRSwap(startDate=startDate,endDate=endDate,referenceDate=referenceDate,effectiveDate=effectiveDate,
               freq=freq,notional=1)
