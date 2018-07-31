@@ -1,4 +1,4 @@
-__author__ = 'beomlee'
+__author__ = 'blee13'
 import pandas as pd
 import numpy as np
 from Scheduler.Scheduler import Scheduler

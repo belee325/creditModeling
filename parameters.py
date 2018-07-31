@@ -1,4 +1,4 @@
-__author__ = 'marcopereira'
+__author__ = 'blee13'
 import os
 from datetime import date
 

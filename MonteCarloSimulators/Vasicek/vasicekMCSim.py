@@ -1,4 +1,4 @@
-__author__ = 'marcopereira'
+__author__ = 'blee13'
 from pandas import DataFrame
 import math
 import numpy as np

@@ -1,4 +1,4 @@
-__author__ = 'marcopereira'
+__author__ = 'blee13'
 import numpy as np
 from dateutil.relativedelta import relativedelta
 import pandas as pd

@@ -1,4 +1,4 @@
-__author__ = 'marcopereira'
+__author__ = 'blee13'
 import numpy as np
 import pandas as pd
 import quandl
@@ -8,8 +8,8 @@ from parameters import WORKING_DIR
 from MonteCarloSimulators.Vasicek.vasicekMCSim import MC_Vasicek_Sim
 from fredapi import Fred
 from scipy.optimize import minimize
-QUANDL_API_KEY = "i1GzZpZsfBpPpazzR4Mg"
-FRED_API_KEY = "Create Your Own"
+QUANDL_API_KEY = ""
+FRED_API_KEY = ""
 
 class CorporateRates(object):
     def __init__(self):
